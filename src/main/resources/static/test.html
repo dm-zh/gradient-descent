@@ -1,0 +1,83 @@
+<html>
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+    <script type="text/javascript">
+
+        fetch("http://localhost:8080/solve")
+  .then(response => {
+    // indicates whether the response is successful (status code 200-299) or not
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${reponse.status}`)
+    }
+    return response.json()
+  })
+  .then(data => {
+    console.log(data)
+
+    var ff = data;
+    google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart2);
+
+      function drawChart2() {
+        var data = google.visualization.arrayToDataTable(ff.sqft_lot);
+
+        var options = {
+          title: 'test ',
+          hAxis: {title: 'sqft_lot', minValue: 0, maxValue: 1},
+          vAxis: {title: 'price', minValue: 0, maxValue: 1},
+          legend: 'none'
+        };
+
+        var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+
+        chart.draw(data, options);
+      }
+  })
+  .catch(error => console.log(error))
+
+
+
+
+
+    </script>
+
+<!--    <script type="text/javascript">-->
+<!--      google.charts.load('current', {'packages':['corechart']});-->
+<!--      google.charts.setOnLoadCallback(drawChart);-->
+
+<!--      function drawChart() {-->
+<!--        var data = google.visualization.arrayToDataTable([-->
+<!--          ['Age', 'Weight'],-->
+<!--          [ 8,      12],-->
+<!--          [ 4,      5.5],-->
+<!--          [ 11,     14],-->
+<!--          [ 4,      5],-->
+<!--          [ 3,      3.5],-->
+<!--          [ 6.5,    7]-->
+<!--        ]);-->
+
+<!--        var options = {-->
+<!--          title: 'Age vs. Weight comparison',-->
+<!--          hAxis: {title: 'Age', minValue: 0, maxValue: 15},-->
+<!--          vAxis: {title: 'Weight', minValue: 0, maxValue: 15},-->
+<!--          legend: 'none'-->
+<!--        };-->
+
+<!--        var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));-->
+
+<!--        chart.draw(data, options);-->
+<!--      }-->
+
+
+
+
+    </script>
+</head>
+<body>
+<div id="chart_div" style="width: 900px; height: 500px;"></div>
+<div id="chart_div2" style="width: 900px; height: 500px;"></div>
+
+</body>
+</html>

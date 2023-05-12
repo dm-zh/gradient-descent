@@ -1,0 +1,7 @@
+sqft_lot,
+floors,
+view
+
+MinMax
+
+MSE
