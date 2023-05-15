@@ -2,7 +2,6 @@ package gradientdescent;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
-import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.stat.StatUtils;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ public class GradientDescentCalculator {
     private final static String output = "price";
 
     @SneakyThrows
-    public Answer calculateDefault() {
+    public Answer calculate() {
         try (CSVReader reader = new CSVReader(new FileReader("src/main/resources/kc_house_data.csv"))) {
             var inputParams = parseData(reader);
             var normalizedInputParams = normalizeInputParams(inputParams.subList(0, 3));
@@ -32,31 +31,11 @@ public class GradientDescentCalculator {
 
 //            System.out.println(inputParams);
 
-//            Object[][] data = new Object[price.length + 1][4];
-//            Object[] headers = new Object[]{"sqft_lot", "floors", "view", "price"};
-//            data[0] = headers;
-//            for (int i = 0; i < price.length; i++) {
-//                Object[] row = new Object[4];
-//                row[0] = normalizedInputParams.get(0)[i];
-//                row[1] = normalizedInputParams.get(1)[i];
-//                row[2] = normalizedInputParams.get(2)[i];
-//                row[3] = price[i];
-//                data[i+1] = row;
-//            }
-            Object[][] sqft_lot = new Object[price.length + 1][2];
-            Object[] headers = new Object[]{"sqft_lot", "price"};
-            sqft_lot[0] = headers;
-            for (int i = 0; i < price.length; i++) {
-                Object[] row = new Object[2];
-                row[0] = normalizedInputParams.get(2)[i];
-//                row[1] = normalizedInputParams.get(1)[i];
-//                row[2] = normalizedInputParams.get(2)[i];
-                row[1] = price[i];
-                sqft_lot[i+1] = row;
-            }
-            return Answer.builder().gradient(gradient).sqft_lot(sqft_lot).build();
+            return prepareAnswer(normalizedInputParams, price, gradient);
         }
     }
+
+
 
     private double[] computeGradients(List<double[]> normalizedParams, double[] price) {
         var rand = new Random();
@@ -72,9 +51,9 @@ public class GradientDescentCalculator {
         double w1 = rand.nextDouble();
         double w2 = rand.nextDouble();
         double w3 = rand.nextDouble();
-        double learningRate = 0.01;
+        double learningRate = 0.001;
 
-        var iterations = 10000;
+        var iterations = 100000;
 
 
         for (int i = 0; i < iterations; i++) {
@@ -85,38 +64,37 @@ public class GradientDescentCalculator {
                 yPred[j] = w0 + w1 * x1[j] + w2 * x2[j] + w3 * x3[j];
             }
 
-            // Compute gradients
             double grad0 = 0;
             double grad1 = 0;
             double grad2 = 0;
             double grad3 = 0;
             for (int j = 0; j < samplesLength; j++) {
-                grad0 += (yPred[j] - y[j]);
-                grad1 += (yPred[j] - y[j]) * x1[j];
-                grad2 += (yPred[j] - y[j]) * x2[j];
-                grad3 += (yPred[j] - y[j]) * x3[j];
+                grad0 += (y[j] - yPred[j]);
+                grad1 += (y[j] - yPred[j]) * x1[j];
+                grad2 += (y[j] - yPred[j]) * x2[j];
+                grad3 += (y[j] - yPred[j]) * x3[j];
             }
-            grad0 *= 2.0 / samplesLength;
-            grad1 *= 2.0 / samplesLength;
-            grad2 *= 2.0 / samplesLength;
-            grad3 *= 2.0 / samplesLength;
+            grad0 *= -2.0 / samplesLength;
+            grad1 *= -2.0 / samplesLength;
+            grad2 *= -2.0 / samplesLength;
+            grad3 *= -2.0 / samplesLength;
 
-            // Update weights
             w0 -= learningRate * grad0;
             w1 -= learningRate * grad1;
             w2 -= learningRate * grad2;
             w3 -= learningRate * grad3;
 
-            // Compute and print loss
-            double loss = 0;
-            for (int j = 0; j < samplesLength; j++) {
-                double error = yPred[j] - y[j];
-                loss += error * error;
-            }
-            loss /= samplesLength;
+            if ( i == 0  || i == iterations - 1 ) {
+                double loss = 0;
+                for (int j = 0; j < samplesLength; j++) {
+                    double error = yPred[j] - y[j];
+                    loss += error * error;
+                }
+                loss /= samplesLength;
 
-            System.out.println("Iteration " + (i + 1) + ": loss = " + loss);
-            System.out.println(Arrays.toString(new double[]{w0, w1, w2, w3}));
+                System.out.println("Iteration " + (i + 1) + ": loss = " + loss);
+                System.out.println(Arrays.toString(new double[]{w0, w1, w2, w3}));
+            }
         }
 
         return new double[]{w0, w1, w2, w3};
@@ -138,6 +116,10 @@ public class GradientDescentCalculator {
             normalizedParams.add(dataAfterNormalization);
 
         }
+        for (double[] normalizedParam : normalizedParams) {
+            System.out.println("Min = " + StatUtils.min(normalizedParam) + " max = " + StatUtils.max(normalizedParam) + " mean = " + StatUtils.mean(normalizedParam) + " median = " + StatUtils.percentile(normalizedParam, 50));
+        }
+
         return normalizedParams;
     }
 
@@ -168,5 +150,21 @@ public class GradientDescentCalculator {
             inputParams.add(answer);
         }
         return inputParams;
+    }
+
+    private static Answer prepareAnswer(List<double[]> normalizedInputParams, double[] price, double[] gradient) {
+        Object[][] data = new Object[price.length + 1][4];
+        Object[] headers = new Object[]{"sqft_lot", "floors", "view", "price"};
+        data[0] = headers;
+        for (int i = 0; i < price.length; i++) {
+            Object[] row = new Object[4];
+            row[0] = normalizedInputParams.get(0)[i];
+            row[1] = normalizedInputParams.get(1)[i];
+            row[2] = normalizedInputParams.get(2)[i];
+            row[3] = price[i];
+            data[i + 1] = row;
+        }
+
+        return Answer.builder().gradient(gradient).data(data).build();
     }
 }

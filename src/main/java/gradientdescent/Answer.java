@@ -13,5 +13,5 @@ import java.util.List;
 @Builder
 public class Answer {
     private double[] gradient;
-    private Object[][] sqft_lot;
+    private Object[][] data;
 }

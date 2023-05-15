@@ -12,7 +12,7 @@ class GradientDescentApplicationTests {
 
 	@Test
 	void contextLoads() {
-		gradientDescentCalculator.calculateDefault();
+		gradientDescentCalculator.calculate();
 	}
 
 }
